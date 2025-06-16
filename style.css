@@ -109,7 +109,7 @@ h1 img {
 .water-can {
   width: 100%;
   height: 100%;
-  background-image: url('img/water-can.png');
+  background-image: url('img/water-can.png'); 
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
