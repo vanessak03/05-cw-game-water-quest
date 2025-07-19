@@ -5,6 +5,21 @@ let gameActive = false;      // Tracks if game is currently running
 let timerInterval; // Make sure this is accessible globally
 let spawnInterval;          // Holds the interval for spawning items
 
+let difficulty = 'normal'; // default
+const DIFFICULTY_SETTINGS = {
+  easy:    { timer: 60, canDisplay: 3500, obstacleLimit: 3, spawnRate: 1200 },
+  normal:  { timer: 35, canDisplay: 2000, obstacleLimit: 2, spawnRate: 1000 },
+  hard:    { timer: 20, canDisplay: 1200, obstacleLimit: 1, spawnRate: 700 }
+};
+let obstacleHits = 0;
+
+const milestones = [
+  { score: 5, message: "Nice start! 5 cans collected." },
+  { score: 10, message: "Halfway there!" },
+  { score: 15, message: "Just a few more to go!" },
+ { score: GOAL_CANS, message: "🎉🚰 You reached the goal!" }
+];
+
 // Creates the 3x3 game grid where items will appear
 function createGrid() {
   const grid = document.querySelector('.game-grid');
@@ -44,7 +59,7 @@ function spawnItem() {
       // Remove the can after 2 seconds if not clicked
       removeTimeout = setTimeout(() => {
         randomCell.innerHTML = '';
-      }, 2000);
+      }, DIFFICULTY_SETTINGS[difficulty].canDisplay);
 
       waterCan.addEventListener('click', () => {
         if (!gameActive) return;
@@ -56,13 +71,13 @@ function spawnItem() {
           document.getElementById('achievements').textContent = "🚫 Dirty water! Lost 2 points!";
         } else {
           currentCans++;
-          if (currentCans === 10) {
-            document.getElementById('achievements').textContent = "💧 10 cans! Keep going!";
-          } else if (currentCans === 20) {
-            document.getElementById('achievements').textContent = "🚰 You're almost there!";
-          } else if (currentCans === GOAL_CANS) {
-            document.getElementById('achievements').textContent = "🎉 You reached the goal!";
-            endGame();
+          // Check for milestone
+          const milestone = milestones.find(m => m.score === currentCans);
+          if (milestone) {
+            document.getElementById('achievements').textContent = milestone.message;
+            if (currentCans === GOAL_CANS) {
+              endGame();
+            }
           }
         }
 
@@ -76,20 +91,23 @@ function spawnItem() {
   if (obstacle) {
     obstacle.addEventListener('click', () => {
       if (!gameActive) return;
+      obstacleHits++;
       document.getElementById('achievements').textContent = "🪨 Oops! You hit an obstacle!";
       randomCell.innerHTML = '';
+      if (obstacleHits >= DIFFICULTY_SETTINGS[difficulty].obstacleLimit) {
+        document.getElementById('achievements').textContent = "💥 Game over! Too many obstacles!";
+        endGame();
+      }
     });
   }
 }
 
 function startTimer() {
-   let timeLeft = 35; // 35 seconds countdown
+  let timeLeft = DIFFICULTY_SETTINGS[difficulty].timer;
   document.getElementById('timer').textContent = timeLeft;
-
   timerInterval = setInterval(() => {
     timeLeft--;
     document.getElementById('timer').textContent = timeLeft;
-
     if (timeLeft <= 0) {
       clearInterval(timerInterval);
       endGame();
@@ -102,11 +120,12 @@ function startTimer() {
 // Initializes and starts a new game
 function startGame() {
   currentCans = 0;
+  obstacleHits = 0;
   document.getElementById('current-cans').textContent = currentCans;
   document.getElementById('achievements').textContent = '';
   gameActive = true;
-  createGrid(); // Set up the game grid
-  spawnInterval = setInterval(spawnItem, 1000); // Spawn water cans every second
+  createGrid();
+  spawnInterval = setInterval(spawnItem, DIFFICULTY_SETTINGS[difficulty].spawnRate);
   startTimer();
 }
 
@@ -145,4 +164,13 @@ function resetGame() {
 document.getElementById('start-game').addEventListener('click', startGame);
 // Attach the event listener after DOM is loaded
 document.getElementById('reset-game').addEventListener('click', resetGame);
+document.getElementById('easy-mode').addEventListener('click', () => setDifficulty('easy'));
+document.getElementById('normal-mode').addEventListener('click', () => setDifficulty('normal'));
+document.getElementById('hard-mode').addEventListener('click', () => setDifficulty('hard'));
+
+function setDifficulty(mode) {
+  difficulty = mode;
+  document.getElementById('achievements').textContent = `Difficulty set to ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+  resetGame();
+}
 
